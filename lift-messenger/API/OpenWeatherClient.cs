@@ -12,7 +12,6 @@ namespace lift_messenger.API
 {
     public class OpenWeatherClient : IWeatherProvider
     {
-        //a5d6edd8794c015ba20f16bffc6c09f8
         private readonly RestClient client;
         private readonly OpenWeatherSettings _settings;
 
@@ -28,10 +27,18 @@ namespace lift_messenger.API
 
             request.AddQueryParameter("q", cityName);
             request.AddQueryParameter("APPID", _settings.Key);
-            var test = client.Execute<WeatherData>(request);
-            var restResponse = client.Execute<WeatherData>(request).Data;
 
-            return restResponse;
+            try
+            {
+                return client.Execute<WeatherData>(request).Data;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+
+
+            return null;
         }
     }
 }

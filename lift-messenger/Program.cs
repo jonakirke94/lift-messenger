@@ -5,6 +5,8 @@ using System;
 using System.IO;
 using lift_messenger.Library;
 using lift_messenger.Settings;
+using Amazon.SimpleNotificationService;
+using Amazon.SimpleNotificationService.Model;
 
 namespace lift_messenger
 {
@@ -19,13 +21,23 @@ namespace lift_messenger
 
             IServiceProvider serviceProvider = serviceCollection.BuildServiceProvider();
 
+
+
+
             var service = (IWeatherProvider)serviceProvider.GetService(typeof(IWeatherProvider));
             var data = service.GetWeatherDataInCity("Aalborg");
             var weather = data.weather[0].main;
             Console.WriteLine("The weather in Aalborg is..." + weather);
-            Console.ReadKey();
 
-            // Go to http://aka.ms/dotnet-get-started-console to continue learning how to build a console app! 
+            if (weather == "Rain")
+            {
+                var msg = (IMessageService)serviceProvider.GetService(typeof(IMessageService));
+                var generatedMsg = msg.GenerateMessage();
+                msg.SendMessage(generatedMsg).Wait();
+            }
+
+            // prevent program from halting        
+            Console.ReadKey();
         }
 
         private static void ConfigureServices(IServiceCollection services)
@@ -39,6 +51,13 @@ namespace lift_messenger
             {
                 settings.Key = configuration.GetSection("OpenWeather")["Key"];
                 settings.Url = configuration.GetSection("OpenWeather")["Url"];
+            });
+
+            services.Configure<AWSSettings>(settings =>
+            {
+                settings.Key = configuration.GetSection("AWS")["Key"];
+                settings.SecretKey = configuration.GetSection("AWS")["SecretKey"];
+                settings.Phone = configuration.GetSection("AWS")["Phone"];
             });
 
             services.AddSingleton(configuration);

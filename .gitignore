@@ -5,7 +5,7 @@ project.lock.json
 *.pyc
 nupkg/
 //don't push API keys
-appsettings.Development.json
+appsettings.json
 
 # Visual Studio Code
 .vscode
