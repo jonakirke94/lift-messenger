@@ -10,7 +10,7 @@ using Microsoft.Extensions.Options;
 
 namespace lift_messenger.API
 {
-    public class Messenger : IMessageService
+    public class Messenger : IMessageProvider
     {
         private readonly AWSSettings _settings;
 
@@ -21,7 +21,19 @@ namespace lift_messenger.API
 
         public string GenerateMessage()
         {
-            return "TEST";
+            string[] names = new string[] { "Casper", "Froberg", "Bro" };
+            string[] descriptions = new string[] { "Det ser ud til at det regner...", "Regnvejr i dag..", "Så er vi på den igen.." };
+            string[] pickupLine = new string[] { "Vil du samle mig op?", "Henter du mig :D?", "Gider du køre forbi mig?" };
+            string[] fromName = new string[] { "Jonathan", "Jonnajuice", "Jonathanos" };
+
+
+            var rnd = new Random();
+            var rndNameIndex = rnd.Next(0, 2);
+            var rndDescIndex = rnd.Next(0, 2);
+            var rndPickupIndex = rnd.Next(0, 2);
+            var rndFromIndex = rnd.Next(0, 2);
+
+            return "Hey" + names[rndNameIndex] + "\n" + descriptions[rndDescIndex] + "\n" + pickupLine[rndPickupIndex] + "\n" + fromName[rndFromIndex];
         }
 
         public async Task SendMessage(string message) {
@@ -42,8 +54,7 @@ namespace lift_messenger.API
             try
             {     
                 PublishResponse pubResponse = await snsClient.PublishAsync(pubRequest);
-                Console.WriteLine("Successfully sent message");
-                Console.WriteLine(pubResponse.MessageId);
+                Console.WriteLine("Successfully sent message " + pubResponse.MessageId);
             }
             catch (Exception e)
             {

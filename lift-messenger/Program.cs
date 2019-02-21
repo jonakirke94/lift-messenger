@@ -7,12 +7,16 @@ using lift_messenger.Library;
 using lift_messenger.Settings;
 using Amazon.SimpleNotificationService;
 using Amazon.SimpleNotificationService.Model;
+using Hangfire;
+using Hangfire.MemoryStorage;
 
 namespace lift_messenger
 {
     class Program
     {
         public static IConfigurationRoot configuration;
+        private static IWeatherProvider weatherService;
+        private static IMessageProvider messageService;
 
         static void Main(string[] args)
         {
@@ -21,23 +25,19 @@ namespace lift_messenger
 
             IServiceProvider serviceProvider = serviceCollection.BuildServiceProvider();
 
+            weatherService = (IWeatherProvider)serviceProvider.GetService(typeof(IWeatherProvider));
+            messageService = (IMessageProvider)serviceProvider.GetService(typeof(IMessageProvider));
 
+            GlobalConfiguration.Configuration.UseMemoryStorage();
 
+            // Cron explanation: Every weekday at 07:00
+            RecurringJob.AddOrUpdate(() => RunNotifier(), "0 7 * * 1-5");
 
-            var service = (IWeatherProvider)serviceProvider.GetService(typeof(IWeatherProvider));
-            var data = service.GetWeatherDataInCity("Aalborg");
-            var weather = data.weather[0].main;
-            Console.WriteLine("The weather in Aalborg is..." + weather);
-
-            if (weather == "Rain")
+            using (new BackgroundJobServer())
             {
-                var msg = (IMessageService)serviceProvider.GetService(typeof(IMessageService));
-                var generatedMsg = msg.GenerateMessage();
-                msg.SendMessage(generatedMsg).Wait();
+                Console.WriteLine("Hangfire Server started");
+                Console.ReadLine();
             }
-
-            // prevent program from halting        
-            Console.ReadKey();
         }
 
         private static void ConfigureServices(IServiceCollection services)
@@ -62,8 +62,23 @@ namespace lift_messenger
 
             services.AddSingleton(configuration);
             services.AddTransient<IWeatherProvider, OpenWeatherClient>();
-            services.AddTransient<IMessageService, Messenger>();
+            services.AddTransient<IMessageProvider, Messenger>();
 
+        }
+
+        public static void RunNotifier()
+        {
+            Console.WriteLine("Running notifier at .. " + DateTime.Now);
+            var data = weatherService.GetWeatherDataInCity("Aalborg");
+            var weather = data.weather[0].main;
+            Console.WriteLine("The weather in Aalborg is..." + weather);
+
+            if (weatherService.IsBadWeather(weather))
+            {
+                Console.WriteLine("It's raining so sending a notification ...");
+                var generatedMessage = messageService.GenerateMessage();
+                messageService.SendMessage(generatedMessage).Wait();
+            }
         }
     }
 }

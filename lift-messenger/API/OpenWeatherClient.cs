@@ -40,5 +40,10 @@ namespace lift_messenger.API
 
             return null;
         }
+
+        public bool IsBadWeather(string weather)
+        {
+            return weather == "Rain";
+        }
     }
 }
